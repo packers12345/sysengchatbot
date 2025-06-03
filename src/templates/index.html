@@ -101,8 +101,12 @@
         <a href="#about" class="text-gray-700 hover:text-vt-orange transition-colors">About</a>
         <a href="#assistant" class="text-gray-700 hover:text-vt-orange transition-colors">Assistant</a>
         <a href="#team" class="text-gray-700 hover:text-vt-orange transition-colors">Team</a>
-          <span class="material-icons">code</span>
-        </a>
+        <span class="material-icons">code</span>
+        <!-- Logout Button (visible when signed in) -->
+        <button id="logout-btn" class="ml-4 bg-vt-maroon hover:bg-vt-orange text-white px-4 py-2 rounded transition flex items-center">
+          <span class="material-icons mr-1">logout</span>
+          Logout
+        </button>
       </div>
     </div>
   </nav>
@@ -572,7 +576,15 @@
       $("#combined-prompt").focus();
     });
 
-    // Remove the old vis.js graph initialization code, as visualization is now handled by the image above.
+    // Logout button handler
+    $("#logout-btn").click(function() {
+      $.post("/logout", function(data) {
+        // On success, redirect to login page
+        window.location.href = "/login";
+      }).fail(function() {
+        alert("Logout failed. Please try again.");
+      });
+    });
   </script>
 </body>
 </html>

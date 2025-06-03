@@ -1,5 +1,5 @@
 import os
-import base64
+import requests  # Add this import at the top if not already present
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from io import BytesIO
 import api_integration  # This module contains your integrated API, DB, and Graphormer-based visualization functions
@@ -14,15 +14,15 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 api_key = os.environ.get("API_KEY")  # Use "API_KEY" to match your .env file
 flask_secret_key = os.environ.get("FLASK_SECRET_KEY", "VT202527")
 pdf_path = os.environ.get("PDF_PATH")
-pdf_b64 = os.environ.get("PDF_B64")
+# Remove pdf_b64 references since you no longer use base64
 
 if not api_key:
     print("WARNING: API_KEY environment variable not set! (Check your .env file and its location)")
 else:
     api_integration.initialize_api(api_key)
 
-if not pdf_path and not pdf_b64:
-    print("WARNING: PDF_PATH or PDF_B64 environment variable not set! (Check your .env file and its location)")
+if not pdf_path:
+    print("WARNING: PDF_PATH environment variable not set! (Check your .env file and its location)")
 
 app = Flask(__name__)
 app.secret_key = flask_secret_key  # Get from environment or use default
@@ -55,19 +55,23 @@ def load_user(user_id):
         return User(user_id)
     return None
 
-# Load the PDF training data from environment variable path or base64
+# Load the PDF training data from environment variable path (URL or local file)
 pdf_data = None
 try:
     if pdf_path:
-        with open(pdf_path, "rb") as f:
-            pdf_data = BytesIO(f.read())
-        print(f"PDF loaded from {pdf_path}")
-    elif pdf_b64:
-        pdf_bytes = base64.b64decode(pdf_b64)
-        pdf_data = BytesIO(pdf_bytes)
-        print("PDF loaded from PDF_B64 environment variable.")
+        if pdf_path.startswith("http://") or pdf_path.startswith("https://"):
+            # Download PDF from Azure Blob Storage URL
+            response = requests.get(pdf_path)
+            response.raise_for_status()
+            pdf_data = BytesIO(response.content)
+            print(f"PDF downloaded from URL: {pdf_path}")
+        else:
+            # Load PDF from local file path
+            with open(pdf_path, "rb") as f:
+                pdf_data = BytesIO(f.read())
+            print(f"PDF loaded from local path: {pdf_path}")
     else:
-        print("PDF path or PDF_B64 not set, skipping PDF load.")
+        print("PDF_PATH not set, skipping PDF load.")
 except Exception as e:
     pdf_data = None
     print(f"Error loading PDF: {e}")
@@ -87,10 +91,11 @@ def login():
             return render_template("login.html", error="Invalid credentials"), 401
     return render_template("login.html")
 
-@app.route("/logout")
+@app.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
     logout_user()
+    session.clear()  # This clears all session data
     return jsonify({"success": True, "message": "Logged out"})
 
 @app.route("/")

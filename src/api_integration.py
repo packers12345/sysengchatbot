@@ -498,27 +498,30 @@ from typing import Optional
 
 def load_pdf_from_env() -> 'Optional[BytesIO]':
     """
-    Loads PDF data from either PDF_PATH (file path) or PDF_B64 (base64 string) environment variable.
+    Loads PDF data from PDF_PATH (URL or file path) environment variable.
     Returns a BytesIO object or None.
     """
     pdf_path = os.environ.get("PDF_PATH")
-    pdf_b64 = os.environ.get("PDF_B64")
     if pdf_path:
-        try:
-            with open(pdf_path, "rb") as f:
-                return BytesIO(f.read())
-        except Exception as e:
-            print(f"Error loading PDF from '{pdf_path}': {e}")
-            return None
-    elif pdf_b64:
-        try:
-            pdf_bytes = base64.b64decode(pdf_b64)
-            return BytesIO(pdf_bytes)
-        except Exception as e:
-            print(f"Error decoding PDF_B64: {e}")
-            return None
+        if pdf_path.startswith("http://") or pdf_path.startswith("https://"):
+            # Download PDF from Azure Blob Storage URL
+            try:
+                response = requests.get(pdf_path)
+                response.raise_for_status()
+                return BytesIO(response.content)
+            except Exception as e:
+                print(f"Error downloading PDF from URL '{pdf_path}': {e}")
+                return None
+        else:
+            # Load PDF from local file path
+            try:
+                with open(pdf_path, "rb") as f:
+                    return BytesIO(f.read())
+            except Exception as e:
+                print(f"Error loading PDF from '{pdf_path}': {e}")
+                return None
     else:
-        print("Error: Neither PDF_PATH nor PDF_B64 environment variable is set.")
+        print("Error: PDF_PATH environment variable is not set.")
         return None
 
 if __name__ == "__main__":
