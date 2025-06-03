@@ -230,9 +230,10 @@ Generate a concise system design document (500 words) that includes:
 3. Unacceptable designs with proofs outlining discrepancies.
 4. Recommendations for improvement.
 5. A formal proof of homomorphism demonstrating equivalence between requirements and designs.
-
+6. Rely on the prompts that the user sends to create the response, not the examples e.g. flashlight.
+ 
 IMPORTANT:
-- Do NOT use any generic or fallback examples unless specified.
+- DO NOT use any generic or fallback examples like the flashlight unless specified, look at the USERS INPUT ONLY and reference it with SQL/PDF data
 - Clearly label each section with appropriate headings.
 - Ensure any defined mathematical expressions are formatted in LaTeX.
 - Keep the response self-contained and data-driven.
@@ -285,7 +286,7 @@ Generate a concise verification requirements document (500 words) that includes:
 3. A formal yes/no proof of homomorphism demonstrating equivalence between system designs and verification requirements.
 
 IMPORTANT:
-- Do NOT use any generic or fallback examples unless specified.
+- DO NOT use any generic or fallback examples like the flashlight unless specified, look at the USERS INPUT ONLY and reference it with SQL/PDF data
 - Clearly label every section (for example, 'Verification Problem Spaces', 'Verification Models', etc.).
 - Format any defined mathematical expressions correctly.
 - Keep the response self-contained and data-driven.
@@ -323,7 +324,7 @@ Please provide your answer in clearly labeled sections. Include:
 2. A short, spaced proof of traceability explanation that follows the table.
 
 IMPORTANT:
-- Do NOT use any generic or fallback examples unless specified.
+- DO NOT use any generic or fallback examples like the flashlight unless specified, look at the USERS INPUT ONLY and reference it with SQL/PDF data
 - Format any defined mathematical expressions in LaTeX.
 - Clearly label each section with headers (e.g., "Traceability Matrix", "Proof of Traceability").
 - Ensure the table is neatly formatted, accounting for missing data.
@@ -364,7 +365,7 @@ Please provide your answer in clearly labeled sections. Include:
 3. A proof of the type of homomorphism and the verification requirement problem space.
 
 IMPORTANT:
-- Do NOT use any generic or fallback examples unless specified.
+- DO NOT use any generic or fallback examples like the flashlight unless specified, look at the USERS INPUT ONLY and reference it with SQL/PDF data.
 - Format any defined mathematical expressions in LaTeX if needed.
 - Clearly label each section with headers.
 - Keep the response self-contained and data-driven.
@@ -387,7 +388,7 @@ import itertools
 
 def extract_important_phrases(text: str) -> list:
     """
-    Extracts important phrases from the requirements text:
+    Extracts important phrases from the requirements text and user input:
     - Phrases containing numbers, units, or mathematical/engineering keywords.
     - Named entities of type QUANTITY, CARDINAL, PERCENT, TIME, DATE, or ORDINAL.
     - Phrases mentioning models, equations, constraints, state machines, etc.
@@ -452,7 +453,7 @@ def generate_network_visualization(graph_data, pdf_data=None):
     """
     Generates a SysML-inspired diagram using Graphviz.
     The user requirements are parsed for key concepts, which are visualized as nodes.
-    Returns a raw SVG string.
+    Returns a raw SVG string from the users input.
     """
     # Extract user requirements text
     user_requirements = ""
