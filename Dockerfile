@@ -3,7 +3,7 @@ FROM python:3.10-slim-bullseye
 
 # Ensure all system packages are up to date to reduce vulnerabilities
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends build-essential gcc unixodbc unixodbc-dev && \
+    apt-get install -y --no-install-recommends build-essential gcc unixodbc unixodbc-dev graphviz && \
     rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
