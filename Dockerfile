@@ -22,6 +22,9 @@ RUN pip install --upgrade pip
 RUN pip install torch==2.3.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install -r requirements.txt
 
+# Download the English language model for spaCy
+RUN python -m spacy download en_core_web_sm
+
 # Copy project files
 COPY . .
 
