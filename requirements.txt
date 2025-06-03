@@ -1,1 +1,14 @@
-
+Flask
+flask-login
+python-dotenv
+pypyodbc
+openai
+spacy
+PyPDF2
+requests
+networkx
+pyvis
+graphviz
+torch
+diffusers
+# For spaCy English model, install with: python -m spacy download en_core_web_sm
