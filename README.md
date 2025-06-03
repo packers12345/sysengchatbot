@@ -37,13 +37,8 @@ Systems_Engineering_Chatbot
    ```
 
 4. **Configure Environment Variables**
-   Create a `.env` file in the root directory and add the following variables:
-   ```
-   API_KEY=<your_api_key>
-   FLASK_SECRET_KEY=<your_secret_key>
-   PDF_PATH=<path_to_your_pdf_file>
-   PDF_B64=<base64_encoded_pdf>
-   ```
+   Create a `.env` file in the root directory 
+
 
 5. **Run the Application**
    ```
