@@ -56,8 +56,3 @@ Systems_Engineering_Chatbot
 - After logging in, you can access the main index page where you can input prompts for system design and verification requirements.
 - The application will generate responses based on the provided inputs and display visualizations.
 
-## Contributing
-Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
-
-## License
-This project is licensed under the MIT License.
