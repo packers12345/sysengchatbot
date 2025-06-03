@@ -213,7 +213,5 @@ def whoami():
     return jsonify({"user": current_user.id})
 
 if __name__ == "__main__":
-    # Get port from environment variable for cloud deployment compatibility
     port = int(os.environ.get("PORT", 5000))
-    # Set host to 0.0.0.0 to make it accessible outside container
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host="0.0.0.0", port=port)
