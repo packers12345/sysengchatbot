@@ -1,191 +1,158 @@
 import os
-import requests  # Add this import at the top if not already present
+import requests
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from io import BytesIO
-import api_integration  # This module contains your integrated API, DB, and Graphormer-based visualization functions
+import api_integration # Import the updated api_integration module
 from dotenv import load_dotenv
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import check_password_hash, generate_password_hash
+# Removed Flask-Login imports as login functionality is being removed
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash # Keep generate_password_hash if still needed elsewhere, though not for login now
 
 # Load environment variables from .env file
+# This should be done at the very top to ensure variables are available
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-# Set your API key, secret key, and PDF path from environment variables
-api_key = os.environ.get("API_KEY")  # Use "API_KEY" to match your .env file
-flask_secret_key = os.environ.get("FLASK_SECRET_KEY", "VT202527")
+# Retrieve API key and PDF path from environment variables
+gemini_api_key = os.environ.get("GEMINI_API_KEY")
 pdf_path = os.environ.get("PDF_PATH")
-# Remove pdf_b64 references since you no longer use base64
 
-if not api_key:
-    print("WARNING: API_KEY environment variable not set! (Check your .env file and its location)")
+# --- Initial Warnings for Missing Environment Variables ---
+if not gemini_api_key:
+    print("WARNING: GEMINI_API_KEY not set in .env! AI functionalities may fail.")
 else:
-    api_integration.initialize_api(api_key)
+    print("Gemini API key detected. AI functionalities should be available.")
 
 if not pdf_path:
-    print("WARNING: PDF_PATH environment variable not set! (Check your .env file and its location)")
+    print("WARNING: PDF_PATH not set in .env! PDF processing functionalities may be limited.")
+else:
+    print(f"PDF_PATH set to: {pdf_path}")
 
 app = Flask(__name__)
-app.secret_key = flask_secret_key  # Get from environment or use default
+# Flask secret key for session management, retrieved from environment
+# Still needed for session management, even without explicit login
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "A_DEFAULT_SECRET_KEY_IF_NOT_SET")
+if app.secret_key == "A_DEFAULT_SECRET_KEY_IF_NOT_SET":
+    print("WARNING: FLASK_SECRET_KEY not set in .env! Using a default key. Please set a strong, random key for production.")
 
-# Setup Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
 
-# Simple user store (replace with DB in production)
-USERS = {
-    "Bhargav": {"password": generate_password_hash("Hume2027!")},
-    "Adi": {"password": generate_password_hash("Hume2027!!")},
-    "Dr.Wach": {"password": generate_password_hash("Hume2027!!!")},
-    # Add up to 5 users as needed
-}
+# --- Flask-Login Setup (Removed) ---
+# login_manager = LoginManager()
+# login_manager.init_app(app)
+# login_manager.login_view = "login"
 
-class User(UserMixin):
-    def __init__(self, username):
-        self.id = username
+# --- User Management (Removed) ---
+# The get_users, User, USERS, and load_user functions are no longer needed
+# as there is no login system.
+# def get_users(): ...
+# USERS = get_users()
+# class User(UserMixin): ...
+# @login_manager.user_loader ...
 
-    @staticmethod
-    def authenticate(username, password):
-        user = USERS.get(username)
-        return user and check_password_hash(user["password"], password)
 
-@login_manager.user_loader
-def load_user(user_id):
-    if user_id in USERS:
-        return User(user_id)
-    return None
-
-# Load the PDF training data from environment variable path (URL or local file)
+# --- PDF Data Loading ---
 pdf_data = None
 try:
     if pdf_path:
-        if pdf_path.startswith("http://") or pdf_path.startswith("https://"):
-            # Download PDF from Azure Blob Storage URL
-            response = requests.get(pdf_path)
-            response.raise_for_status()
+        if pdf_path.startswith("http"):
+            # Fetch PDF from a URL
+            print(f"Attempting to fetch PDF from URL: {pdf_path}")
+            response = requests.get(pdf_path, timeout=10) # Added timeout
+            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             pdf_data = BytesIO(response.content)
-            print(f"PDF downloaded from URL: {pdf_path}")
+            print("PDF fetched successfully from URL.")
         else:
-            # Load PDF from local file path
-            with open(pdf_path, "rb") as f:
-                pdf_data = BytesIO(f.read())
-            print(f"PDF loaded from local path: {pdf_path}")
-    else:
-        print("PDF_PATH not set, skipping PDF load.")
-except Exception as e:
+            # Load PDF from a local file path
+            if os.path.exists(pdf_path):
+                print(f"Attempting to load PDF from local path: {pdf_path}")
+                with open(pdf_path, "rb") as f:
+                    pdf_data = BytesIO(f.read())
+                print("PDF loaded successfully from local path.")
+            else:
+                print(f"ERROR: Local PDF file not found at: {pdf_path}")
+                pdf_data = None
+except requests.exceptions.RequestException as e:
+    print(f"ERROR: Failed to fetch PDF from URL '{pdf_path}': {e}")
     pdf_data = None
-    print(f"Error loading PDF: {e}")
+except Exception as e:
+    print(f"ERROR: An unexpected error occurred while loading PDF: {e}")
+    pdf_data = None
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    # Always log out the user before showing the login page
-    if current_user.is_authenticated:
-        logout_user()
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        if User.authenticate(username, password):
-            login_user(User(username))
-            return redirect(url_for("index"))
-        else:
-            return render_template("login.html", error="Invalid credentials"), 401
-    return render_template("login.html")
+# --- Routes ---
+# Removed /login route
+# @app.route("/login", methods=["GET", "POST"])
+# def login(): ...
 
-@app.route("/logout", methods=["GET", "POST"])
-@login_required
-def logout():
-    logout_user()
-    session.clear()  # This clears all session data
-    return jsonify({"success": True, "message": "Logged out"})
+# Removed /logout route
+# @app.route("/logout", methods=["GET", "POST"])
+# @login_required
+# def logout(): ...
 
 @app.route("/")
-@login_required
+# Removed @login_required decorator
 def index():
-    # Initialize conversation history in session if not present
+    """Renders the main chatbot interface."""
+    # Ensure conversation is initialized for all users
     if "conversation" not in session:
         session["conversation"] = []
-    # Pass an initial null morphism image to the template
-    return render_template("index.html", conversation=session.get("conversation", []), morphism_image=None)
+    # Pass an initial None for morphism_image, it will be updated via AJAX
+    return render_template("index.html", conversation=session["conversation"], morphism_image=None)
 
 @app.route("/combined", methods=["POST"])
-@login_required
+# Removed @login_required decorator
 def combined():
     """
-    Combined endpoint that retrieves outputs from the integration module:
-      - System Design
-      - Verification Requirements
-      - Traceability
-      - Verification Conditions
-      - And the Morphism Visualization generated.
+    Processes a user prompt to generate system design, verification requirements,
+    traceability, verification conditions, and a system visualization.
     """
     prompt = request.form.get("prompt", "").strip()
     if not prompt:
-        return jsonify({"response": "Please enter a prompt."})
-    
-    # Example dictionaries for system design and verification requirements.
-    examples_design = {
-        "example_reqs": "Example system requirements: [Structured requirements based on the dissertation].",
-        "example_designs": "Example system designs: [Detailed design example]."
-    }
-    examples_verif = {
-        "example_system_reqs": "Example system requirements: [Structured requirements based on the dissertation].",
-        "example_verif_reqs": {"verification": {"details": [{"example": "verification requirement structure"}]}},
-        "example_designs": {"design": {"details": [{"example": "system design structure"}]}}
-    }
-    
-    # Additional examples for traceability and verification conditions.
-    example_system_requirements = "Example system requirements: [Structured requirements based on the dissertation]."
-    example_system_designs = {"design": {"details": [{"example": "system design structure"}]}}
-    example_verification_requirements = {"verification": {"details": [{"example": "verification requirement structure"}]}}
+        return jsonify({"response": "Please enter a prompt."}), 400 # Return 400 for bad request
 
-    # Generate outputs from the integration module.
+    system_design_output = "Error: System design generation failed."
+    verification_output = "Error: Verification requirements generation failed."
+    traceability_output = "Error: Traceability generation failed."
+    verification_conditions_output = "Error: Verification conditions generation failed."
+    morphism_image = None # Initialize to None
+
     try:
-        system_design_output = api_integration.generate_system_designs(prompt, examples_design, pdf_data)
+        system_design_output = api_integration.generate_system_designs(prompt, pdf_data=pdf_data)
     except Exception as e:
+        print(f"Error calling generate_system_designs: {e}")
         system_design_output = f"Error generating system design: {str(e)}"
-    
+
     try:
-        verification_output = api_integration.create_verification_requirements_models(prompt, examples_verif, pdf_data)
+        verification_output = api_integration.create_verification_requirements_models(prompt, pdf_data=pdf_data)
     except Exception as e:
-        msg = str(e)
-        if "openai.ChatCompletion" in msg:
-            msg += " Please run 'openai migrate' or install openai==0.28 to pin to the old version."
-        verification_output = f"Error generating verification requirements: {msg}"
-    
+        print(f"Error calling create_verification_requirements_models: {e}")
+        verification_output = f"Error generating verification requirements: {str(e)}"
+
     try:
-        traceability_output = api_integration.get_traceability(prompt, example_system_requirements, example_system_designs)
+        traceability_output = api_integration.get_traceability(prompt)
     except Exception as e:
+        print(f"Error calling get_traceability: {e}")
         traceability_output = f"Error generating traceability: {str(e)}"
-    
+
     try:
-        verification_conditions_output = api_integration.get_verification_conditions(
-            prompt,
-            example_system_requirements,
-            example_verification_requirements,
-            example_system_designs
-        )
+        verification_conditions_output = api_integration.get_verification_conditions(prompt)
     except Exception as e:
+        print(f"Error calling get_verification_conditions: {e}")
         verification_conditions_output = f"Error generating verification conditions: {str(e)}"
-    
-    # Generate the system visualization based on user input and generated outputs
+
     try:
-        # Create graph data structure with user requirements
+        # Prepare graph data for visualization.
+        # This structure should match what generate_network_visualization expects.
         graph_data = {
-            'user_requirements': prompt,  # Pass the user's prompt as requirements
-            'nodes': [],  # The API will generate nodes internally
-            'edges': []   # The API will generate edges internally
+            'user_requirements': prompt,
+            'nodes': [], # You'll need to populate these based on your design logic
+            'edges': []  # You'll need to populate these based on your design logic
         }
-        
-        # Generate the visualization using Graphviz for SysML-inspired diagrams
+        # Call the visualization function
         morphism_image = api_integration.generate_network_visualization(graph_data, pdf_data)
-        print("Length of visualization string:", len(morphism_image) if morphism_image else "None")
     except Exception as e:
         morphism_image = None
-        print(f"Error generating system visualization: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error generating visualization: {e}")
 
-    # Update conversation history
+    # Update conversation history in session
     conversation = session.get("conversation", [])
     conversation.append({"sender": "User", "text": prompt})
     combined_text = (
@@ -195,23 +162,41 @@ def combined():
         "=== Verification Conditions ===\n" + verification_conditions_output
     )
     conversation.append({"sender": "Assistant", "text": combined_text})
-    session["conversation"] = conversation
+    session["conversation"] = conversation # Save updated conversation to session
 
-    # Return the outputs including the system visualization
+    # Return all generated outputs as JSON
     return jsonify({
         "system_design": system_design_output,
         "verification_requirements": verification_output,
         "traceability": traceability_output,
         "verification_conditions": verification_conditions_output,
-        # Pass the SVG string directly for frontend rendering
-        "system_visual": morphism_image
+        "system_visual": morphism_image # This will be HTML content for the visualization
     })
 
-@app.route("/whoami")
-@login_required
-def whoami():
-    return jsonify({"user": current_user.id})
+@app.route("/system_requirements", methods=["POST"])
+# Removed @login_required decorator
+def system_requirements():
+    """Generates only system requirements based on a prompt."""
+    prompt = request.form.get("prompt", "").strip()
+    if not prompt:
+        return jsonify({"response": "Please enter a prompt."}), 400
 
+    try:
+        system_requirements_text = api_integration.generate_system_requirements(prompt, pdf_data=pdf_data)
+        return jsonify({
+            "system_requirements": system_requirements_text
+        })
+    except Exception as e:
+        print(f"Error calling generate_system_requirements: {e}")
+        return jsonify({"error": f"Failed to generate system requirements: {str(e)}"}), 500
+
+# Removed /whoami route as it's tied to user authentication
+# @app.route("/whoami")
+# @login_required
+# def whoami(): ...
+
+# --- Main Application Run ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    # Running in debug mode is useful for development, but should be False in production
+    app.run(host="0.0.0.0", port=port, debug=True)
