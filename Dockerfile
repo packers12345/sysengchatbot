@@ -32,7 +32,7 @@ COPY . .
 EXPOSE 5000
 
 # Set environment variables for Flask
-ENV FLASK_APP=src/app.py
+ENV FLASK_APP=src/app_simple.py
 
 # Run the Flask app
-CMD ["python", "src/app.py"]
+CMD ["python", "src/app_simple.py"]
